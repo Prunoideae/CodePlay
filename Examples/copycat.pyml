@@ -1,0 +1,18 @@
+import CodePlay
+import requests
+import json
+
+title = "A copy from Netease"
+description = """
+This is a copy from a musiclist on Netease!
+"""
+
+playlist=[]
+
+def init():
+	global playlist
+	r = requests.get("https://api.imjad.cn/cloudmusic/?type=playlist&id=" + input("Enter the id you want to copy:"))
+	rjson = json.loads(r.text)
+	tracks = rjson["playlist"]["trackIds"]
+	for i in range(0, len(tracks)):
+		playlist.append([str(tracks[i]["id"]),1])
