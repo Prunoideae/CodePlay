@@ -81,7 +81,7 @@ def init():
 	#initialize the playlist
 	#all from netease
 	if hasattr(codeplay, "playlist"):
-		if os.path.exists(os.path.dirname(os.path.abspath(__file__)):
+		if os.path.exists(os.path.dirname(os.path.abspath(__file__))):
 			fo = open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\SongInfo.json')
 			fjs=fo.read()
 			fo.close()
