@@ -204,9 +204,10 @@ def music_loop():
 			load_music(mitem)
 			play_music(mitem)
 		else:
-			nowplaying = nowplaying +1
 			if playlist[nowplaying][3] == 2:
 				nowplaying+=1
+			nowplaying = nowplaying +1
+			
 				
 			if nowplaying >= len(playlist):
 				nowplaying = nowplaying % len(playlist)
