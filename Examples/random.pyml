@@ -1,0 +1,10 @@
+import CodePlay
+import os
+import random
+
+arr = ["22636718","22636730","22636645","22636640","498286779","28547450","404184788"]
+def custom_list(offset):
+	index = random.randint(0,len(arr)-1)
+	title = CodePlay.load_netease_id(arr[index])
+	return ([arr[index],"1",title])
+	

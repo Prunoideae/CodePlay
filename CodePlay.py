@@ -57,8 +57,7 @@ def volume_up():
 		volume = codeplay.custom_vup(volume)
 	else:
 		volume=volume+10.0
-	pygame.mixer.music.set_volume(volume/100)
-	
+	pygame.mixer.music.set_volume(volume/100)	
 def volume_down():
 	global volume
 	if hasattr(codeplay, "custom_vdown"):
@@ -66,6 +65,30 @@ def volume_down():
 	else:
 		volume=volume-10.0
 	pygame.mixer.music.set_volume(volume/100)
+def load_netease_id(id):
+	if os.path.exists(os.path.dirname(os.path.abspath(__file__))):
+		fo = open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\SongInfo.json')
+		fjs=fo.read()
+		fo.close()
+	else:
+		fjs="{data:{}}"
+			
+	songinfo=json.loads(fjs)
+	if not id in songinfo["data"]:
+		r=requests.get("https://api.imjad.cn/cloudmusic/?type=detail&id=" + id)
+		ddecoded = json.loads(r.text)
+		songinfo["data"][id] = ddecoded["songs"][0]["name"]
+	if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + id + ".*"):
+		print ("Song " + ddecoded["songs"][0]["name"] + " not found, starting download...")
+		r=requests.get("https://api.imjad.cn/cloudmusic/?type=song&id=" + id)
+		decoded = json.loads(r.text)
+		r=requests.get(decoded["data"][0]["url"],allow_redirects=True)
+		open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\' + id + '.mp3','wb').write(r.content)
+	fo = open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\SongInfo.json','w')
+	fo.write(json.dumps(songinfo))
+	fo.close()
+	return songinfo["data"][id]
+
 	
 def init():
 	os.system("cls")
@@ -141,9 +164,6 @@ def init():
 		keyboard.add_hotkey(codeplay.vdownkey, volume_down)
 	else:
 		keyboard.add_hotkey("ctrl+shift+down", volume_down)
-	
-	#start song playing
-	load_music(playlist[0])
 	
 	for t in threads:
 		t.setDaemon(True)
