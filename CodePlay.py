@@ -118,22 +118,22 @@ def init():
 					r=requests.get("https://api.imjad.cn/cloudmusic/?type=detail&id=" + codeplay.playlist[i][0])
 					ddecoded = json.loads(r.text)
 					songinfo["data"][codeplay.playlist[i][0]] = ddecoded["songs"][0]["name"]
-					
-				if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
-					print ("Song " + ddecoded["songs"][0]["name"] + " not found, starting download...")
-					r=requests.get("https://api.imjad.cn/cloudmusic/?type=song&id=" + codeplay.playlist[i][0])
-					decoded = json.loads(r.text)
-					r=requests.get(decoded["data"][0]["url"],allow_redirects=True)
-					open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\' + codeplay.playlist[i][0] + '.mp3','wb').write(r.content)
+					if hasattr(codeplay,"debug") and codeplay.debug:
+						print("Fetching data for " + ddecoded["songs"][0]["name"])
 				toadd = codeplay.playlist[i]
 				toadd.append(songinfo["data"][codeplay.playlist[i][0]])
+				toadd.append(0)
+				
 				playlist.append(toadd)
 			else:
 				playlist.append(codeplay.playlist[i])
 		fo = open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\SongInfo.json','w')
 		fo.write(json.dumps(songinfo))
 		fo.close()
-		
+		#start music download thread
+		t2.setDaemon(True)
+		t2.start()
+	
 	#register hotkeys
 	if hasattr(codeplay, "resumekey"):
 		keyboard.add_hotkey(codeplay.resumekey, resume_music)
@@ -165,10 +165,35 @@ def init():
 	else:
 		keyboard.add_hotkey("ctrl+shift+down", volume_down)
 	
-	for t in threads:
-		t.setDaemon(True)
-		t.start()
+	
+	t1.setDaemon(True)
+	t1.start()
 
+def download_thread():
+	started = False
+	global playlist
+	for i in range(0,len(playlist)):
+		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
+			if not started: 
+				if hasattr(codeplay,"debug") and codeplay.debug:
+					print("Download thread started.")
+				started = True
+			if hasattr(codeplay,"debug") and codeplay.debug:
+				print ("Song " + playlist[i][2] + " not found, starting download...")
+			r=requests.get("https://api.imjad.cn/cloudmusic/?type=song&id=" + codeplay.playlist[i][0])
+			decoded = json.loads(r.text)
+			if decoded["data"][0]["url"]!="":
+				r=requests.get(decoded["data"][0]["url"],allow_redirects=True)
+				open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\' + codeplay.playlist[i][0] + '.mp3','wb').write(r.content)
+			else:
+				print("Cannot get URL of " + playlist[i][2] + ", skipping.")
+				playlist[i][3]=1
+		playlist[i][3]+=1
+	if started:
+		if hasattr(codeplay,"debug") and codeplay.debug:
+			print("Download thread ended.")
+	
+	
 def music_loop():
 	global offset
 	nowplaying=-1
@@ -180,10 +205,14 @@ def music_loop():
 			play_music(mitem)
 		else:
 			nowplaying = nowplaying +1
-			
+			if playlist[nowplaying][3] == 2:
+				nowplaying+=1
+				
 			if nowplaying >= len(playlist):
 				nowplaying = nowplaying % len(playlist)
-				
+			
+			while playlist[nowplaying][3] == 0:
+				sleep(0.1)
 			load_music(playlist[nowplaying])
 			play_music(playlist[nowplaying])
 				
@@ -233,9 +262,8 @@ handle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 ctypes.windll.kernel32.SetCurrentConsoleFontEx(
 	handle, ctypes.c_long(False), ctypes.pointer(font))
 	
-threads = []
 t1 = threading.Thread(target=music_loop)
-threads.append(t1)
+t2 = threading.Thread(target=download_thread)
 
 if __name__ == "__main__":
 	if not os.path.exists(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\"):

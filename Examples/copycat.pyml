@@ -6,13 +6,14 @@ title = "A copy from Netease"
 description = """
 This is a copy from a musiclist on Netease!
 """
+debug=True
 
 playlist=[]
 
 def init():
 	global playlist
-	r = requests.get("https://api.imjad.cn/cloudmusic/?type=playlist&id=" + input("Enter the id you want to copy:"))
+	r = requests.get("https://api.bzqll.com/music/netease/songList?key=579621905&id=2121912744&limit=10&offset=0")
 	rjson = json.loads(r.text)
-	tracks = rjson["playlist"]["trackIds"]
+	tracks = rjson["data"]["songs"]
 	for i in range(0, len(tracks)):
 		playlist.append([str(tracks[i]["id"]),1])
