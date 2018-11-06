@@ -1,4 +1,0 @@
-urllib3==1.23
-requests==2.19.1
-keyboard==0.13.2
-pygame==1.9.4
