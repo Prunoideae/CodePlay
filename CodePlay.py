@@ -37,7 +37,7 @@ def play_music(music_item):
 	if music_item[1] == 0:
 		print (("Now playing:" + Path(music_item[0]).stem()).ljust(80))
 	else:
-		print (("Now playing:" + music_item[2]).ljust(30))
+		print (("Now playing:" + music_item[2]).ljust(80))
 	if not tot==-1 and hasattr(codeplay,"playlist"):
 		printProgressBar(barprogress,tot,prefix="Progress:", suffix=("Downloading " + str(barprogress) + "/" + str(tot)),length=30)
 		
