@@ -25,8 +25,6 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     stro = ('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
     print(stro.ljust(80), end = '\r')
     sys.stdout.flush()
-    if iteration == total: 
-        print()
 def load_music(music_item):
 	if music_item[1] == 0:
 		pygame.mixer.music.load(music_item[0])
@@ -209,7 +207,7 @@ def download_thread():
 		playlist[i][3]+=1
 	if started:
 		if hasattr(codeplay,"debug") and codeplay.debug:
-			print("Download thread ended.".ljust(80))
+			print("\rDownload thread ended.".ljust(80))
 		else:
 			print("\r".ljust(80))
 	tot=-1
