@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import glob
+import ctypes
 import urllib
 import requests
 import keyboard
@@ -36,8 +37,8 @@ def play_music(music_item):
 	if music_item[1] == 0:
 		print (("Now playing:" + Path(music_item[0]).stem()).ljust(80))
 	else:
-		print (("Now playing:" + music_item[2]).ljust(80))
-	if not tot==-1:
+		print (("Now playing:" + music_item[2]).ljust(30))
+	if not tot==-1 and hasattr(codeplay,"playlist"):
 		printProgressBar(barprogress,tot,prefix="Progress:", suffix=("Downloading " + str(barprogress) + "/" + str(tot)),length=30)
 		
 def resume_music():
@@ -210,7 +211,7 @@ def download_thread():
 		if hasattr(codeplay,"debug") and codeplay.debug:
 			print("Download thread ended.".ljust(80))
 		else:
-			print("".ljust(80))
+			print("\r".ljust(80))
 	tot=-1
 	
 def music_loop():
@@ -258,6 +259,32 @@ def music_loop():
 def event_loop():
 	while True:
 		sleep(0.1)
+	
+LF_FACESIZE = 32
+STD_OUTPUT_HANDLE = -11
+
+class COORD(ctypes.Structure):
+    _fields_ = [("X", ctypes.c_short), ("Y", ctypes.c_short)]
+class CONSOLE_FONT_INFOEX(ctypes.Structure):
+    _fields_ = [("cbSize", ctypes.c_ulong),
+                ("nFont", ctypes.c_ulong),
+                ("dwFontSize", COORD),
+                ("FontFamily", ctypes.c_uint),
+                ("FontWeight", ctypes.c_uint),
+                ("FaceName", ctypes.c_wchar * LF_FACESIZE)]
+
+font = CONSOLE_FONT_INFOEX()
+font.cbSize = ctypes.sizeof(CONSOLE_FONT_INFOEX)
+font.nFont = 14
+font.dwFontSize.X = 0
+font.dwFontSize.Y = 14
+font.FontFamily = 54
+font.FontWeight = 400
+font.FaceName = "Consolas"
+
+handle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+ctypes.windll.kernel32.SetCurrentConsoleFontEx(
+	handle, ctypes.c_long(False), ctypes.pointer(font))
 	
 t1 = threading.Thread(target=music_loop)
 t2 = threading.Thread(target=download_thread)
