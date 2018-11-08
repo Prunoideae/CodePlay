@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import glob
+import eyed3
 import ctypes
 import urllib
 import requests
@@ -17,26 +18,35 @@ import importlib.machinery
 playlist=[]
 offset=0
 volume=100.0
+totplay=0
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', showpercent=True):
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    stro = ('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-    print(stro.ljust(80), end = '\r')
+    bar = fill * filledLength + ' ' * (length - filledLength)
+    if showpercent:
+        stro = ('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
+    else:
+        stro = ('\r%s |%s| %s' % (prefix, bar, suffix))
+    print(stro.ljust(60), end = '\r')
     sys.stdout.flush()
 def load_music(music_item):
+	global totplay
 	if music_item[1] == 0:
 		pygame.mixer.music.load(music_item[0])
+		audio_info=eyed3.load(music_item[0])
+		totplay=audio_info.info.time_secs
 	else:
 		pygame.mixer.music.load(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + music_item[0] + ".mp3")	
+		audio_info=eyed3.load(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + music_item[0] + ".mp3")
+		totplay=audio_info.info.time_secs
 def play_music(music_item):
 	pygame.mixer.music.play()
 	if music_item[1] == 0:
 		print (("Now playing:" + Path(music_item[0]).stem()).ljust(80))
 	else:
 		print (("Now playing:" + music_item[2]).ljust(80))
-	if (not tot==-1) and hasattr(codeplay,"playlist"):
+	if tot!=0 and tot!=-1 and hasattr(codeplay,"playlist"):
 		printProgressBar(barprogress,tot,prefix="Progress:", suffix=("Downloading " + str(barprogress) + "/" + str(tot)),length=30)		
 def resume_music():
 	if hasattr(codeplay, "custom_resume"):
@@ -186,10 +196,9 @@ def download_thread():
 	for i in range(0,len(playlist)):
 		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
 			tot+=1
-	
 	for i in range(0,len(playlist)):
 		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
-			barprogress+=1
+			barprogress += 1
 			r=requests.get("https://api.imjad.cn/cloudmusic/?type=song&id=" + codeplay.playlist[i][0])
 			decoded = json.loads(r.text)
 			if decoded["data"][0]["url"]!="":
@@ -232,12 +241,12 @@ def music_loop():
 			
 			if nowplaying >= len(playlist):
 				nowplaying = nowplaying % len(playlist)
-
+				
 			while playlist[nowplaying][3] == 0:
 				sleep(0.1)
+			
 			if hasattr(codeplay, "custom_switch"):
 				nowplaying = codeplay.custom_switch(nowplaying)
-				
 			load_music(playlist[nowplaying])
 			play_music(playlist[nowplaying])
 				
@@ -260,6 +269,10 @@ def music_loop():
 def event_loop():
 	while True:
 		sleep(0.1)
+		if tot == -1:
+			mt,st = divmod(totplay,60)
+			mn,sn = divmod(pygame.mixer.music.get_pos()/1000,60)
+			printProgressBar(pygame.mixer.music.get_pos()/1000, totplay, prefix="Playing:", suffix=(str(int(mn)) + ":" + str(int(sn)).ljust(2) + "/" + str(int(mt)) + ":" + str(int(st)).ljust(2)),length=30, showpercent=False)
 	
 LF_FACESIZE = 32
 STD_OUTPUT_HANDLE = -11
@@ -290,7 +303,7 @@ ctypes.windll.kernel32.SetCurrentConsoleFontEx(
 t1 = threading.Thread(target=music_loop)
 t2 = threading.Thread(target=download_thread)
 
-tot=-1
+tot=0
 barprogress=0
 
 if __name__ == "__main__":
