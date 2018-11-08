@@ -1,0 +1,34 @@
+import CodePlay
+import requests
+import json
+import random
+
+title = "A copy from Netease"
+description = """
+This is a copy musiclist from a touhou musiclist on Netease!
+"""
+debug=True
+
+playlist=[]
+internal_list=[]
+internal_index=0
+
+def init():
+	global playlist
+	global internal_list
+	r = requests.get("https://api.bzqll.com/music/netease/songList?key=579621905&id=47133474&limit=1000&offset=0")
+	rjson = json.loads(r.text)
+	tracks = rjson["data"]["songs"]
+	internal_list=list(range(len(tracks)))
+	random.shuffle(internal_list)
+	for i in range(0, len(tracks)):
+		playlist.append([str(tracks[i]["id"]),1])
+		
+def custom_switch(nowplaying):
+	global internal_index
+	global internal_list
+	internal_index+=1
+	if internal_index == len(internal_list): 
+		internal_index=0
+		random.shuffle(internal_list)
+	return internal_list[internal_index]

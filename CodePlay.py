@@ -36,9 +36,8 @@ def play_music(music_item):
 		print (("Now playing:" + Path(music_item[0]).stem()).ljust(80))
 	else:
 		print (("Now playing:" + music_item[2]).ljust(80))
-	if not tot==-1 and hasattr(codeplay,"playlist"):
-		printProgressBar(barprogress,tot,prefix="Progress:", suffix=("Downloading " + str(barprogress) + "/" + str(tot)),length=30)
-		
+	if (not tot==-1) and hasattr(codeplay,"playlist"):
+		printProgressBar(barprogress,tot,prefix="Progress:", suffix=("Downloading " + str(barprogress) + "/" + str(tot)),length=30)		
 def resume_music():
 	if hasattr(codeplay, "custom_resume"):
 		codeplay.custom_resume()
@@ -190,26 +189,31 @@ def download_thread():
 	
 	for i in range(0,len(playlist)):
 		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
-			if not started: 
-				if hasattr(codeplay,"debug") and codeplay.debug:
-					print("Download thread started.")
-				started = True
 			barprogress+=1
-			printProgressBar (barprogress,tot,prefix="Progress:", suffix=("Downloading " + str(barprogress) + "/" + str(tot)),length=30)
 			r=requests.get("https://api.imjad.cn/cloudmusic/?type=song&id=" + codeplay.playlist[i][0])
 			decoded = json.loads(r.text)
 			if decoded["data"][0]["url"]!="":
-				r=requests.get(decoded["data"][0]["url"],allow_redirects=True)
-				open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\' + codeplay.playlist[i][0] + '.mp3','wb').write(r.content)
+				#Recent download method, no progress shown
+				#r=requests.get(decoded["data"][0]["url"],allow_redirects=True)
+				#open(os.path.dirname(os.path.abspath(__file__)) + '\\NetEaseCache\\' + codeplay.playlist[i][0] + '.mp3','wb').write(r.content)
+				if not started: started = True
+				response = requests.request("GET", decoded["data"][0]["url"], stream=True, data=None, headers=None)
+				total_length = int(response.headers.get("Content-Length"))
+				
+				savepath = os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".mp3"
+				with open(savepath,'wb') as fle:
+					percentprogress=0
+					for chunk in response.iter_content(chunk_size=10000):
+						if chunk:
+							fle.write(chunk)
+							fle.flush()
+						percentprogress+=len(chunk)
+						printProgressBar(percentprogress,total_length,prefix="Progress:", suffix="Downloading " + str(barprogress) + "/" + str(tot),length=30)
 			else:
 				print("Cannot get URL of " + playlist[i][2] + ", skipping.")
 				playlist[i][3]=1
 		playlist[i][3]+=1
-	if started:
-		if hasattr(codeplay,"debug") and codeplay.debug:
-			print("\rDownload thread ended.".ljust(80))
-		else:
-			print("\r".ljust(80))
+	if started:	print("\r".ljust(80))
 	tot=-1
 	
 def music_loop():
@@ -226,10 +230,9 @@ def music_loop():
 				nowplaying+=1
 			nowplaying = nowplaying +1
 			
-				
 			if nowplaying >= len(playlist):
 				nowplaying = nowplaying % len(playlist)
-			
+
 			while playlist[nowplaying][3] == 0:
 				sleep(0.1)
 			if hasattr(codeplay, "custom_switch"):
@@ -287,7 +290,7 @@ ctypes.windll.kernel32.SetCurrentConsoleFontEx(
 t1 = threading.Thread(target=music_loop)
 t2 = threading.Thread(target=download_thread)
 
-tot=0
+tot=-1
 barprogress=0
 
 if __name__ == "__main__":
