@@ -43,7 +43,7 @@ def load_music(music_item):
 def play_music(music_item):
 	pygame.mixer.music.play()
 	if music_item[1] == 0:
-		print (("Now playing:" + Path(music_item[0]).stem()).ljust(80))
+		print (("Now playing:" + os.path.splitext(os.path.basename(music_item[0]))[0]).ljust(80))
 	else:
 		print (("Now playing:" + music_item[2]).ljust(80))
 	if tot!=0 and tot!=-1 and hasattr(codeplay,"playlist"):
@@ -133,9 +133,9 @@ def init():
 		for i in range(0, len(codeplay.playlist)):
 			if codeplay.playlist[i][1] == 1:
 				if not codeplay.playlist[i][0] in songinfo["data"]:
-					r=requests.get("https://api.imjad.cn/cloudmusic/?type=detail&id=" + codeplay.playlist[i][0])
+					r=requests.get("https://api.bzqll.com/music/netease/song?key=579621905&id=" + codeplay.playlist[i][0])
 					ddecoded = json.loads(r.text)
-					songinfo["data"][codeplay.playlist[i][0]] = ddecoded["songs"][0]["name"]
+					songinfo["data"][codeplay.playlist[i][0]] = ddecoded["data"]["name"]
 					if hasattr(codeplay,"debug") and codeplay.debug:
 						print("Fetching data for " + ddecoded["songs"][0]["name"])
 				toadd = codeplay.playlist[i]
@@ -194,10 +194,10 @@ def download_thread():
 	global barprogress
 	
 	for i in range(0,len(playlist)):
-		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
+		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*") and playlist[i][1] == 1:
 			tot+=1
 	for i in range(0,len(playlist)):
-		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*"):
+		if not glob.glob(os.path.dirname(os.path.abspath(__file__)) + "\\NetEaseCache\\" + codeplay.playlist[i][0] + ".*") and playlist[i][1] == 1:
 			barprogress += 1
 			r=requests.get("https://api.imjad.cn/cloudmusic/?type=song&id=" + codeplay.playlist[i][0])
 			decoded = json.loads(r.text)
@@ -221,7 +221,7 @@ def download_thread():
 			else:
 				print("Cannot get URL of " + playlist[i][2] + ", skipping.")
 				playlist[i][3]=1
-		playlist[i][3]+=1
+		if playlist[i][1]==1: playlist[i][3]+=1
 	if started:	print("\r".ljust(80))
 	tot=-1
 	
@@ -235,15 +235,16 @@ def music_loop():
 			load_music(mitem)
 			play_music(mitem)
 		else:
-			if playlist[nowplaying][3] == 2:
-				nowplaying+=1
+		
 			nowplaying = nowplaying +1
-			
 			if nowplaying >= len(playlist):
 				nowplaying = nowplaying % len(playlist)
-				
-			while playlist[nowplaying][3] == 0:
-				sleep(0.1)
+			if playlist[nowplaying][1] == 1 and playlist[nowplaying][3] == 2:
+				nowplaying+=1
+			
+			if playlist[nowplaying][1] == 1:
+				while playlist[nowplaying][3] == 0:
+					sleep(0.1)
 			
 			if hasattr(codeplay, "custom_switch"):
 				nowplaying = codeplay.custom_switch(nowplaying)
